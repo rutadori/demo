@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--
+  [회원가입 준비 화면] 회원 저장 기능이 없는 단계이므로 입력·전송을 fieldset disabled로 막습니다.
+  - 제출 버튼만 막으면 Enter 키로 전송될 수 있어 입력 영역 전체를 비활성화합니다.
+  - 추후 회원 DTO·@Valid·저장 Service를 구현할 때 POST 처리와 연결하고 활성화합니다.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('회원가입')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container page-section">
+  <div class="auth-panel">
+    <span class="badge text-bg-light mb-3">준비 중</span><h1 class="h2 mb-3">회원가입</h1><p class="text-muted mb-4" id="join-note">회원가입 기능을 준비하고 있어요. 지금은 로그인 없이 매물을 둘러볼 수 있습니다.</p>
+    <form><fieldset disabled aria-describedby="join-note">
+      <div class="mb-3"><label for="join-username" class="form-label">아이디</label><input id="join-username" type="text" name="username" class="form-control" placeholder="영문·숫자 4~20자" autocomplete="username"></div>
+      <div class="mb-3"><label for="join-password" class="form-label">비밀번호</label><input id="join-password" type="password" name="password" class="form-control" placeholder="8자 이상" autocomplete="new-password"></div>
+      <div class="mb-3"><label for="passwordConfirm" class="form-label">비밀번호 확인</label><input id="passwordConfirm" type="password" name="passwordConfirm" class="form-control" autocomplete="new-password"></div>
+      <div class="mb-3"><label for="email" class="form-label">이메일</label><input id="email" type="email" name="email" class="form-control" autocomplete="email"></div>
+      <div class="mb-4"><label for="nickname" class="form-label">닉네임</label><input id="nickname" type="text" name="nickname" class="form-control" autocomplete="nickname"></div>
+      <button type="button" class="btn btn-secondary w-100" disabled>회원가입 준비 중</button>
+    </fieldset></form>
+    <a th:href="@{/property/list}" class="btn btn-outline-primary w-100 mt-3">매물 둘러보기</a>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

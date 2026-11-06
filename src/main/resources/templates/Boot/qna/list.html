@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!--
+  [Q&A 화면] GET /qna → PageController.qna() → Boot/qna/list.html
+  - 질문·답변과 표시 개수는 화면 구성을 확인하기 위한 고정 예시입니다. 실제 사용자 문의가 아닙니다.
+  - details·summary는 브라우저 기본 접기/펼치기 요소로 마우스와 키보드 모두 사용할 수 있습니다.
+  - 문의 작성 버튼은 저장 기능이 없는 단계이므로 disabled로 막고 예시 화면임을 안내합니다.
+  - 추후 Service → Mapper 조회를 연결할 때는 고정 항목을 th:each와 th:text로 교체합니다.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('Q&A')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container page-section">
+  <div class="page-heading qna-heading">
+    <div>
+      <p class="eyebrow">이용 안내 · 문의</p>
+      <h1>궁금한 점이 있으신가요?</h1>
+      <p class="text-muted mb-0">매물 정보와 서비스 이용에 관한 질문, 답변을 모았습니다.</p>
+    </div>
+    <button type="button" class="btn btn-outline-primary" disabled aria-describedby="qna-preview-note">문의 작성 준비 중</button>
+  </div>
+
+  <div id="qna-preview-note" class="qna-preview-note" role="note">
+    <span class="qna-preview-label">예시 화면</span>
+    <p class="mb-0">아래 질문과 답변은 미리보기용 예시입니다. 실제 문의 작성과 전송 기능은 준비 중입니다.</p>
+  </div>
+
+  <section aria-labelledby="qna-list-heading" class="qna-board">
+    <div class="qna-board-heading">
+      <h2 id="qna-list-heading" class="h5 mb-0">예시 Q&amp;A <span class="result-count">6</span>건</h2>
+      <p class="text-muted small mb-0">답변 완료 5건 · 답변 대기 1건</p>
+    </div>
+
+    <!-- open 속성으로 첫 질문의 답변만 처음부터 보여 줍니다. 다른 질문도 각자 펼칠 수 있습니다. -->
+    <details class="qna-item" open>
+      <summary>
+        <span class="qna-number" aria-hidden="true">01</span>
+        <span class="qna-question"><span class="qna-category">매물 정보</span><span class="qna-title">문의해 보니 이미 계약된 집이라고 합니다.</span></span>
+        <span class="qna-status qna-status-answered">답변 완료</span>
+        <span class="qna-toggle" aria-hidden="true">+</span>
+      </summary>
+      <div class="qna-answer">
+        <p class="qna-answer-label">운영자 답변 · 예시</p>
+        <p>불편을 드려 죄송합니다. 원본 사이트의 모집 상태를 확인하고, 계약이 완료된 매물은 확인 후 목록에서 내리겠습니다.</p>
+        <p class="mb-0">사이트에 표시된 정보와 실제 모집 상태는 다를 수 있습니다. 계약 가능 여부는 원본 사이트의 담당 부동산에도 확인해 주세요.</p>
+      </div>
+    </details>
+
+    <details class="qna-item">
+      <summary>
+        <span class="qna-number" aria-hidden="true">02</span>
+        <span class="qna-question"><span class="qna-category">가격 · 비용</span><span class="qna-title">여기에 나온 월세와 원본 사이트의 금액이 달라요.</span></span>
+        <span class="qna-status qna-status-answered">답변 완료</span>
+        <span class="qna-toggle" aria-hidden="true">+</span>
+      </summary>
+      <div class="qna-answer">
+        <p class="qna-answer-label">운영자 답변 · 예시</p>
+        <p>매물 정보를 가져온 이후에 가격이 바뀌었을 수 있습니다. 최신 월세와 관리비는 원본 매물 페이지에서 확인해 주세요.</p>
+        <p class="mb-0">표시된 월세 외에 보증금, 사례금, 중개 수수료 등의 비용이 있을 수 있으므로 계약 전 전체 비용을 확인해 주세요.</p>
+      </div>
+    </details>
+
+    <details class="qna-item">
+      <summary>
+        <span class="qna-number" aria-hidden="true">03</span>
+        <span class="qna-question"><span class="qna-category">이용 방법</span><span class="qna-title">매물을 눌렀는데 원본 페이지가 열리지 않아요.</span></span>
+        <span class="qna-status qna-status-answered">답변 완료</span>
+        <span class="qna-toggle" aria-hidden="true">+</span>
+      </summary>
+      <div class="qna-answer">
+        <p class="qna-answer-label">운영자 답변 · 예시</p>
+        <p>원본 사이트에서 매물을 삭제했거나 주소를 변경했을 수 있습니다. 일시적인 사이트 접속 문제일 수도 있습니다.</p>
+        <p class="mb-0">잠시 후 다시 접속하거나 다른 매물을 확인해 주세요. 연결되는 원본 주소는 카드의 매물 제목에서 확인할 수 있습니다.</p>
+      </div>
+    </details>
+
+    <details class="qna-item">
+      <summary>
+        <span class="qna-number" aria-hidden="true">04</span>
+        <span class="qna-question"><span class="qna-category">지역 검색</span><span class="qna-title">삿포로 말고 아사히카와나 하코다테도 볼 수 있나요?</span></span>
+        <span class="qna-status qna-status-answered">답변 완료</span>
+        <span class="qna-toggle" aria-hidden="true">+</span>
+      </summary>
+      <div class="qna-answer">
+        <p class="qna-answer-label">운영자 답변 · 예시</p>
+        <p>네. 매물 검색에서 지역을 ‘홋카이도’로 선택한 다음, ‘도시 · 구’에서 旭川市(아사히카와) 또는 函館市(하코다테)를 골라 검색할 수 있습니다.</p>
+        <p class="mb-0">키워드에 ‘아사히카와’, ‘하코다테’처럼 한글 지명을 입력해도 검색할 수 있습니다. <a class="text-link" th:href="@{/property/list(prefecture='北海道')}">홋카이도 매물 살펴보기 →</a></p>
+      </div>
+    </details>
+
+    <details class="qna-item">
+      <summary>
+        <span class="qna-number" aria-hidden="true">05</span>
+        <span class="qna-question"><span class="qna-category">통근 · 통학</span><span class="qna-title">학교까지 지하철로 30분 이내인 집을 추천받고 싶어요.</span></span>
+        <span class="qna-status qna-status-answered">답변 완료</span>
+        <span class="qna-toggle" aria-hidden="true">+</span>
+      </summary>
+      <div class="qna-answer">
+        <p class="qna-answer-label">운영자 답변 · 예시</p>
+        <p>학교나 직장까지의 이동 시간을 기준으로 매물을 추천하는 기능은 준비 중입니다. 현재는 지하철 이동 시간을 계산한 추천 결과를 제공하지 않습니다.</p>
+        <p class="mb-0">우선 매물 검색에서 역 이름과 역까지의 도보 조건으로 찾아보실 수 있습니다. <a class="text-link" th:href="@{/property/list}">매물 검색으로 →</a></p>
+      </div>
+    </details>
+
+    <details class="qna-item">
+      <summary>
+        <span class="qna-number" aria-hidden="true">06</span>
+        <span class="qna-question"><span class="qna-category">지역 요청</span><span class="qna-title">현재 목록에 없는 지역의 매물도 추가할 수 있나요?</span></span>
+        <span class="qna-status qna-status-waiting">답변 대기</span>
+        <span class="qna-toggle" aria-hidden="true">+</span>
+      </summary>
+      <div class="qna-answer">
+        <p class="qna-answer-label">답변 대기 · 예시</p>
+        <p class="mb-0 text-muted">아직 답변이 등록되지 않았습니다. 답변이 등록되면 이곳에 표시됩니다.</p>
+      </div>
+    </details>
+  </section>
+
+  <aside class="feature-notice mt-4">
+    <div><h2 class="h5">찾고 있는 집이 있나요?</h2><p class="mb-0 text-muted">지역과 월세, 역까지의 도보 조건으로 매물을 살펴보세요.</p></div>
+    <a th:href="@{/property/list}" class="btn btn-primary">매물 살펴보기</a>
+  </aside>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

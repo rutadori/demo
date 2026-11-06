@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!--
+  [수집 관리] GET은 조회, POST는 수집 실행입니다. CrawlController는 업무를 Service에 위임합니다.
+  - sources는 출처별 저장 매물 수, crawlResults는 이번 서버 실행의 지역×출처별 마지막 결과입니다.
+  - th:action이 POST 폼에 CSRF 토큰을 넣습니다. 원본 URL을 입력받지 않아 임의 사이트를 수집하지 않습니다.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('수집 관리')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container page-section">
+  <div class="page-heading">
+    <p class="eyebrow">학습용 관리 화면</p>
+    <h1>매물 수집 관리</h1>
+    <p class="text-muted" th:text="${'지역별 등록 도시·구마다 공개 목록 첫 페이지에서 출처당 최대 ' + maxPerSource + '건을 가져옵니다.'}"></p>
+  </div>
+  <div th:if="${crawlMessage != null}" th:text="${crawlMessage}" class="alert alert-info" role="status"></div>
+  <div class="feature-notice mb-4">
+    <div><h2 class="h5">지역을 골라 매물을 갱신하세요</h2><p class="text-muted mb-0">같은 도시·구·출처는 10분 간격으로 실행합니다. 기존 매물은 유지합니다.</p></div>
+    <form th:action="@{/manage/crawling}" method="post" class="d-grid gap-2">
+      <label for="crawl-region" class="form-label mb-0">수집 지역</label>
+      <select id="crawl-region" name="region" class="form-select"><option value="all">전체 6개 지역</option><option th:each="region : ${regions}" th:value="${region.code}" th:selected="${selectedRegion == region.code}" th:text="${region.displayName + ' · ' + region.collectionSummary}"></option></select>
+      <button type="submit" class="btn btn-primary">선택 지역 매물 가져오기</button>
+    </form>
+  </div>
+  <h2 class="section-title">지역별 수집 범위</h2>
+  <div class="row g-3 mb-5"><div class="col-sm-6 col-xl-4" th:each="region : ${regions}"><a class="area-link" th:href="@{/property/list(prefecture=${region.prefecture})}"><strong th:text="${region.displayName}"></strong><span th:text="${region.collectionSummary}"></span></a></div></div>
+  <h2 class="section-title">출처별 저장 매물</h2>
+  <div class="row g-3 mb-5">
+    <div class="col-sm-6 col-xl-3" th:each="source : ${sources}">
+      <a class="area-link" th:href="@{/property/list(sourceId=${source.id})}"><strong th:text="${source.sourceName}"></strong><span th:text="${source.listingCount + '건 · 저장된 노출 매물'}"></span></a>
+    </div>
+  </div>
+  <h2 class="section-title">마지막 실행 결과</h2>
+  <p class="text-muted small">아래 실행 기록은 서버 재시작 시 초기화됩니다. 저장된 매물은 DB에 남습니다.</p>
+  <div class="table-responsive form-panel">
+    <table class="table align-middle mb-0">
+      <thead><tr><th scope="col">지역</th><th scope="col">출처</th><th scope="col">상태</th><th scope="col">이번 처리</th><th scope="col">설명</th><th scope="col">확인 시각</th></tr></thead>
+      <tbody><tr th:each="result : ${crawlResults}">
+        <th scope="row" class="text-nowrap" th:text="${result.regionName}"></th>
+        <td class="text-nowrap" th:text="${result.sourceName}"></td>
+        <td><span class="badge" th:classappend="${result.status == 'SUCCESS' ? 'text-bg-success' : 'text-bg-secondary'}" th:text="${result.statusLabel}"></span></td>
+        <td class="text-nowrap" th:text="${result.savedCount + '건'}"></td>
+        <td th:text="${result.message}"></td>
+        <td class="text-nowrap small" th:text="${result.checkedAt == null ? '—' : #temporals.format(result.checkedAt, 'MM-dd HH:mm:ss')}"></td>
+      </tr></tbody>
+    </table>
+  </div>
+  <a th:href="@{/property/list}" class="btn btn-outline-primary mt-4">매물 목록 확인</a>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

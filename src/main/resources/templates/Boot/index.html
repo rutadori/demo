@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+  [메인 화면] GET / → PageController.home() → index.html
+  - Controller가 propertyList라는 이름으로 매물 목록을 Model에 넣습니다.
+  - DB에 저장한 실제 매물을 조회하며 데이터가 없으면 빈 상태를 표시합니다.
+  - 검색 조건의 name은 목록 화면과 통일합니다. 지역은 DB의 일본어 표기를 사용합니다.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('메인')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<section class="hero">
+  <div class="container">
+    <div class="home-hero-layout">
+      <div class="home-hero-copy">
+        <p class="eyebrow">모든 매물을 한 곳에서!</p>
+        <h1 class="fw-bold mb-3">アツイエ 에서 집을 찾고,<br>원본 사이트에서 찾은 집을 확인하자!</h1>
+        <p class="hero-description mb-0">지역과 월세로 매물을 살펴보고, 마음에 드는 집은 원본 사이트에서 확인하세요.</p>
+      </div>
+      <!-- static/images의 원본을 비율 그대로 표시합니다. width·height로 로딩 전에도 표시 공간을 확보합니다. -->
+      <figure class="page-artwork home-artwork">
+        <img th:src="@{/images/index-hero.png}" width="1671" height="941" fetchpriority="high" decoding="async"
+             alt="벚꽃이 핀 일본 주택가에서 다양한 집을 살펴보는 모습">
+      </figure>
+    </div>
+    <!-- GET 폼은 조건을 URL에 담아 목록 화면으로 전달하고 Service가 실제 DB를 조회합니다. -->
+    <form th:action="@{/property/list}" method="get" class="search-panel row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="home-prefecture" class="form-label">지역</label>
+        <select id="home-prefecture" name="prefecture" class="form-select">
+          <option value="">전체 지역</option>
+          <!-- Service에서 받은 같은 지역 설정을 목록·관리 화면에서도 사용합니다. -->
+          <option th:each="region : ${regions}" th:value="${region.prefecture}" th:text="${region.displayName}"></option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="home-layout" class="form-label">방 구조</label>
+        <select id="home-layout" name="layout" class="form-select">
+          <option value="">전체 구조</option><option value="1R">1R · 원룸</option><option value="1K">1K</option><option value="1LDK">1LDK</option><option value="2LDK">2LDK</option>
+        </select>
+      </div>
+      <div class="col-md-4"><label for="home-keyword" class="form-label">역 이름 · 지역 · 키워드</label><input id="home-keyword" name="keyword" type="search" class="form-control" maxlength="100" placeholder="예: 新宿, 신주쿠"></div>
+      <div class="col-md-2 d-grid"><button type="submit" class="btn btn-primary">매물 살펴보기</button></div>
+    </form>
+  </div>
+</section>
+<main id="main-content" class="container page-section">
+  <section aria-labelledby="area-heading" class="mb-5">
+    <h2 id="area-heading" class="section-title">지역으로 둘러보기</h2>
+    <!-- 여섯 지역의 고정 검색 조건입니다. 각 지역 안의 여러 도시·구를 수집하며 목록에서 도시별로 좁힐 수 있습니다. -->
+    <div class="row g-3">
+      <div class="col-6 col-md-4 col-xl-2" th:each="region : ${regions}">
+        <a th:href="@{/property/list(prefecture=${region.prefecture})}" class="area-link"><strong th:text="${region.displayName}"></strong><span th:text="${region.prefecture}"></span></a>
+      </div>
+    </div>
+  </section>
+  <section aria-labelledby="listing-heading">
+    <div class="d-flex justify-content-between align-items-center gap-3 mb-3"><h2 id="listing-heading" class="section-title mb-0">최근 등록된 매물</h2><a th:href="@{/property/list}" class="text-link">전체 보기 →</a></div>
+    <!-- null·빈 목록 모두 처리합니다. 조건은 th:replace와 같은 태그에 두지 않습니다. -->
+    <th:block th:if="${#lists.isEmpty(propertyList)}"><div th:replace="~{fragments/property-card :: empty('아직 표시할 매물이 없습니다', '매물이 준비되면 출처와 월세를 한눈에 확인할 수 있어요.')}"></div></th:block>
+    <div class="row g-4" th:unless="${#lists.isEmpty(propertyList)}">
+      <!-- th:each는 공통 매물 카드를 전달받은 목록의 개수만큼 반복합니다. -->
+      <div class="col-md-6 col-xl-4" th:each="p : ${propertyList}"><article th:replace="~{fragments/property-card :: card(${p})}"></article></div>
+    </div>
+  </section>
+  <aside class="feature-notice mt-5">
+    <div><span class="badge rounded-pill text-bg-light mb-2">준비 중</span><h2 class="h5">회사·학교에서 가까운 집 찾기</h2><p class="mb-0 text-muted">통근·통학 시간을 기준으로 매물을 찾는 기능을 준비하고 있어요.</p></div>
+    <a th:href="@{/recommend/search}" class="btn btn-outline-primary">기능 안내</a>
+  </aside>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace는 Mapper 인터페이스의 전체 이름, 각 id는 인터페이스 메서드 이름과 일치합니다. -->
+<mapper namespace="com.example.demo.mapper.PropertyMapper">
+  <!-- resultMap은 DB의 snake_case 컬럼을 Java 객체의 camelCase 속성으로 명시적으로 연결합니다. -->
+  <resultMap id="sourceMap" type="com.example.demo.model.PropertySource">
+    <id column="id" property="id"/>
+    <result column="source_code" property="sourceCode"/>
+    <result column="source_name" property="sourceName"/>
+    <result column="base_url" property="baseUrl"/>
+    <result column="is_enabled" property="enabled"/>
+    <result column="listing_count" property="listingCount"/>
+  </resultMap>
+  <resultMap id="listingMap" type="com.example.demo.model.PropertyListing">
+    <id column="id" property="id"/>
+    <result column="source_id" property="sourceId"/>
+    <result column="source_listing_key" property="sourceListingKey"/>
+    <result column="source_name" property="sourceName"/>
+    <result column="source_code" property="sourceCode"/>
+    <result column="title" property="title"/>
+    <result column="original_url" property="originalUrl"/>
+    <result column="prefecture" property="prefecture"/>
+    <result column="city" property="city"/>
+    <result column="address" property="address"/>
+    <result column="rent_yen" property="rentYen"/>
+    <result column="management_fee_yen" property="managementFeeYen"/>
+    <result column="layout" property="layout"/>
+    <result column="area_m2" property="areaM2"/>
+    <result column="station_name" property="stationName"/>
+    <result column="walk_minutes" property="walkMinutes"/>
+    <result column="image_url" property="imageUrl"/>
+    <result column="status" property="status"/>
+    <result column="last_seen_at" property="lastSeenAt"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="upsertSource">
+    INSERT INTO property_source (source_code, source_name, base_url, is_enabled)
+    VALUES (#{sourceCode}, #{sourceName}, #{baseUrl}, TRUE) AS incoming
+    ON DUPLICATE KEY UPDATE source_name = incoming.source_name, base_url = incoming.base_url
+  </insert>
+  <select id="findSource" resultMap="sourceMap">
+    SELECT * FROM property_source WHERE source_code = #{code}
+  </select>
+  <select id="findSources" resultMap="sourceMap">
+    SELECT s.*, COUNT(p.id) AS listing_count
+    FROM property_source s
+    LEFT JOIN property_listing p ON p.source_id = s.id AND p.status = 'ACTIVE'
+    GROUP BY s.id ORDER BY s.id
+  </select>
+
+  <!-- #{...}는 바인딩 파라미터입니다. 문자열을 SQL에 직접 이어 붙이지 않습니다. -->
+  <insert id="upsertListing">
+    INSERT INTO property_listing
+      (source_id, source_listing_key, title, original_url, prefecture, city, address,
+       rent_yen, management_fee_yen, layout, area_m2, station_name, walk_minutes, image_url,
+       status, last_seen_at)
+    VALUES
+      (#{sourceId}, #{sourceListingKey}, #{title}, #{originalUrl}, #{prefecture}, #{city}, #{address},
+       #{rentYen}, #{managementFeeYen}, #{layout}, #{areaM2}, #{stationName}, #{walkMinutes}, #{imageUrl},
+       'ACTIVE', #{lastSeenAt}) AS incoming
+    ON DUPLICATE KEY UPDATE
+      title = incoming.title, original_url = incoming.original_url,
+      prefecture = incoming.prefecture, city = incoming.city, address = incoming.address,
+      rent_yen = incoming.rent_yen, management_fee_yen = incoming.management_fee_yen,
+      layout = incoming.layout, area_m2 = incoming.area_m2, station_name = incoming.station_name,
+      walk_minutes = incoming.walk_minutes, image_url = incoming.image_url,
+      status = 'ACTIVE', last_seen_at = incoming.last_seen_at
+  </insert>
+
+  <sql id="joinedListings">
+    SELECT p.*, s.source_name, s.source_code
+    FROM property_listing p JOIN property_source s ON s.id = p.source_id
+    WHERE p.status = 'ACTIVE'
+  </sql>
+  <select id="findCities" resultType="string">
+    SELECT DISTINCT city FROM property_listing WHERE status = 'ACTIVE' AND city IS NOT NULL AND city != ''
+    <if test="prefecture != null and prefecture != ''">AND prefecture = #{prefecture}</if>
+    ORDER BY city
+  </select>
+  <select id="findListings" resultMap="listingMap">
+    <include refid="joinedListings"/>
+    <if test="prefecture != null and prefecture != ''">AND p.prefecture = #{prefecture}</if>
+    <if test="city != null and city != ''">AND p.city = #{city}</if>
+    <if test="layout != null and layout != ''">AND p.layout = #{layout}</if>
+    <if test="minRent != null">AND p.rent_yen &gt;= #{minRent}</if>
+    <if test="maxRent != null">AND p.rent_yen &lt;= #{maxRent}</if>
+    <if test="walkMinutes != null">AND p.walk_minutes &lt;= #{walkMinutes}</if>
+    <if test="sourceId != null">AND p.source_id = #{sourceId}</if>
+    <!-- LOCATE는 사용자 입력의 %·_를 와일드카드가 아닌 일반 문자로 검색합니다. -->
+    <if test="queryKeyword != null and queryKeyword != ''">
+      AND (LOCATE(#{queryKeyword}, p.title) &gt; 0 OR LOCATE(#{queryKeyword}, p.address) &gt; 0
+        OR LOCATE(#{queryKeyword}, p.station_name) &gt; 0 OR LOCATE(#{queryKeyword}, s.source_name) &gt; 0)
+    </if>
+    <choose>
+      <when test="sort == 'rentAsc'">ORDER BY p.rent_yen IS NULL, p.rent_yen, p.id DESC</when>
+      <when test="sort == 'walkAsc'">ORDER BY p.walk_minutes IS NULL, p.walk_minutes, p.id DESC</when>
+      <otherwise>ORDER BY p.created_at DESC, p.id DESC</otherwise>
+    </choose>
+    LIMIT 120
+  </select>
+  <select id="findRecentListings" resultMap="listingMap">
+    <include refid="joinedListings"/> ORDER BY p.created_at DESC, p.id DESC LIMIT 6
+  </select>
+  <select id="findListing" resultMap="listingMap">
+    <include refid="joinedListings"/> AND p.id = #{id}
+  </select>
+</mapper>

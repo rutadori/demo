@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!--
+  [통합 매물 목록] GET /property/list
+  - Controller Model: propertyList(매물 목록), sources(출처 목록).
+  - 실제 검색 SQL·정렬은 PropertyService → PropertyMapper를 거쳐 수행합니다.
+  - 페이지 처리는 아직 없으며 최대 120건을 표시합니다. 전체 검색 건수와는 구분합니다.
+  - prefecture는 東京都 같은 DB 원문, layout은 1K 같은 구조 코드입니다.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('매물 검색')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container page-section">
+  <div class="page-heading"><p class="eyebrow">일본 부동산 모아보기</p><h1>어떤 집을 찾고 계세요?</h1><p class="text-muted mb-0">조건에 맞는 매물을 살펴보고, 자세한 정보는 원본 사이트에서 확인하세요.</p></div>
+  <div th:if="${searchError != null}" class="alert alert-danger" role="alert" th:text="${searchError}"></div>
+  <p class="small text-muted">각 지역의 여러 도시·구에서 수집한 매물 일부입니다. 검색 결과는 저장된 매물 중 최대 120건을 표시합니다.</p>
+  <div class="row g-4">
+    <aside class="col-lg-3">
+      <form th:action="@{/property/list}" method="get" class="filter-panel">
+        <div class="d-flex justify-content-between align-items-center mb-4"><h2 class="h5 mb-0">검색 조건</h2><a th:href="@{/property/list}" class="small text-link">초기화</a></div>
+        <!-- param 값은 배열이므로 [0]으로 첫 값을 사용합니다. 제출 후 선택값을 유지합니다. -->
+        <div class="mb-3"><label for="prefecture" class="form-label">지역</label>
+          <select id="prefecture" name="prefecture" class="form-select" onchange="this.form.elements.city.value=''; this.form.requestSubmit()" th:with="selected=${param.prefecture != null ? param.prefecture[0] : ''}">
+            <option value="">전체 지역</option>
+            <option th:each="region : ${regions}" th:value="${region.prefecture}" th:selected="${selected == region.prefecture}" th:text="${region.displayName}"></option>
+          </select>
+        </div>
+        <div class="mb-3"><label for="city" class="form-label">도시 · 구</label>
+          <select id="city" name="city" class="form-select" th:with="selected=${param.city != null ? param.city[0] : ''}">
+            <option value="">전체 도시 · 구</option>
+            <option th:each="city : ${cities}" th:value="${city}" th:selected="${selected == city}" th:text="${city}"></option>
+          </select>
+          <p class="form-text mb-0">지역을 선택하면 해당 지역의 도시 목록이 표시됩니다.</p>
+        </div>
+        <div class="mb-3"><label for="keyword" class="form-label">역 이름 · 지역 · 키워드</label><input id="keyword" type="search" name="keyword" class="form-control" maxlength="100" placeholder="예: 新宿, 신주쿠" th:value="${param.keyword != null ? param.keyword[0] : ''}"></div>
+        <fieldset class="mb-3"><legend class="form-label">월세 범위 · 엔</legend><div class="row g-2">
+          <div class="col-6"><label for="minRent" class="visually-hidden">최소 월세</label><input id="minRent" type="number" name="minRent" min="0" max="2147483647" step="1" class="form-control" placeholder="최소" th:value="${param.minRent != null ? param.minRent[0] : ''}"></div>
+          <div class="col-6"><label for="maxRent" class="visually-hidden">최대 월세</label><input id="maxRent" type="number" name="maxRent" min="0" max="2147483647" step="1" class="form-control" placeholder="최대" th:value="${param.maxRent != null ? param.maxRent[0] : ''}"></div>
+        </div><p class="form-text mb-0">예: 85000 = 8만 5천 엔</p></fieldset>
+        <div class="mb-3"><label for="layout" class="form-label">방 구조</label>
+          <select id="layout" name="layout" class="form-select" th:with="selected=${param.layout != null ? param.layout[0] : ''}"><option value="">전체 구조</option><option value="1R" th:selected="${selected == '1R'}">1R · 원룸</option><option value="1K" th:selected="${selected == '1K'}">1K</option><option value="1LDK" th:selected="${selected == '1LDK'}">1LDK</option><option value="2LDK" th:selected="${selected == '2LDK'}">2LDK</option></select>
+        </div>
+        <div class="mb-3"><label for="walkMinutes" class="form-label">역까지 도보</label>
+          <select id="walkMinutes" name="walkMinutes" class="form-select" th:with="selected=${param.walkMinutes != null ? param.walkMinutes[0] : ''}"><option value="">제한 없음</option><option value="5" th:selected="${selected == '5'}">5분 이내</option><option value="10" th:selected="${selected == '10'}">10분 이내</option><option value="15" th:selected="${selected == '15'}">15분 이내</option></select>
+        </div>
+        <div class="mb-3"><label for="sourceId" class="form-label">출처 사이트</label>
+          <select id="sourceId" name="sourceId" class="form-select"><option value="">전체 사이트</option>
+            <!-- 출처도 DB에서 전달받은 sources를 사용합니다. 현재 연동되지 않은 사이트를 표시하지 않습니다. -->
+            <option th:each="source : ${sources}" th:value="${source.id}" th:text="${source.sourceName}" th:selected="${param.sourceId != null and param.sourceId[0] == #strings.toString(source.id)}"></option>
+          </select>
+        </div>
+        <div class="mb-4"><label for="sort" class="form-label">정렬</label>
+          <select id="sort" name="sort" class="form-select" th:with="selected=${param.sort != null ? param.sort[0] : 'newest'}"><option value="newest" th:selected="${selected == 'newest'}">최근 등록순</option><option value="rentAsc" th:selected="${selected == 'rentAsc'}">월세 낮은순</option><option value="walkAsc" th:selected="${selected == 'walkAsc'}">역 도보 가까운순</option></select>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">조건으로 검색</button>
+      </form>
+    </aside>
+    <section class="col-lg-9" aria-labelledby="results-heading">
+      <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+        <!-- 현재 목록 개수이며 페이지 처리를 구현할 때 전체 검색 건수와 구분합니다. -->
+        <h2 id="results-heading" class="h5 mb-0">표시 매물 <span class="result-count" th:text="${#lists.isEmpty(propertyList) ? 0 : #lists.size(propertyList)}">0</span>건</h2><span class="small text-muted">카드 선택 시 원본으로 이동 ↗</span>
+      </div>
+      <th:block th:if="${#lists.isEmpty(propertyList)}"><div th:replace="~{fragments/property-card :: empty('표시할 매물이 없습니다', '아직 매물이 준비되지 않았거나 조건에 맞는 매물이 없어요. 다른 조건으로 확인해 보세요.')}"></div></th:block>
+      <div class="row g-4" th:unless="${#lists.isEmpty(propertyList)}"><div class="col-md-6" th:each="p : ${propertyList}"><article th:replace="~{fragments/property-card :: card(${p})}"></article></div></div>
+      <!-- 실제 페이지 처리 전까지 동작하지 않는 페이지 번호를 표시하지 않습니다. -->
+      <p class="small text-muted mt-4 mb-0">표시된 가격과 모집 상태는 원본과 다를 수 있습니다. 최신 정보는 원본 사이트에서 확인해 주세요.</p>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

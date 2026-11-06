@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<!--
+  [선택 매물 안내] 기존 GET /property/detail 주소에 접근할 때의 보조 화면입니다.
+  - 통합 목록의 카드는 원본 URL로 직접 연결하므로 이 화면을 거치지 않습니다.
+  - 이후 Controller가 property를 전달하면 동일한 카드로 보여줍니다.
+  - 존재하는 id의 실제 조회 결과만 표시하며 임의의 id를 예시 매물로 대체하지 않습니다.
+-->
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head th:replace="~{fragments/layout :: head('매물 안내')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main id="main-content" class="container page-section">
+  <nav aria-label="현재 위치"><ol class="breadcrumb"><li class="breadcrumb-item"><a th:href="@{/}">홈</a></li><li class="breadcrumb-item"><a th:href="@{/property/list}">매물 검색</a></li><li class="breadcrumb-item active" aria-current="page">매물 안내</li></ol></nav>
+  <h1 class="h2 mb-4">매물 안내</h1>
+  <th:block th:if="${property == null}"><div th:replace="~{fragments/property-card :: empty('매물 목록에서 원하는 집을 선택해 주세요', '매물 카드를 선택하면 해당 매물이 올라온 원본 상세 페이지가 새 탭으로 열립니다.')}"></div></th:block>
+  <div th:if="${property != null}" class="row"><div class="col-md-8 col-xl-5"><article th:replace="~{fragments/property-card :: card(${property})}"></article></div></div>
+  <a th:href="@{/property/list}" class="btn btn-primary mt-4">매물 목록으로</a>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

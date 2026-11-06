@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Local Supabase connection secrets; never share these in the repository.
+config/supabase-local.properties
+.env
+config/mysql-local.properties

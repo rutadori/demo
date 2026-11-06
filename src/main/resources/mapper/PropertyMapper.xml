@@ -37,8 +37,17 @@
 
   <insert id="upsertSource">
     INSERT INTO property_source (source_code, source_name, base_url, is_enabled)
-    VALUES (#{sourceCode}, #{sourceName}, #{baseUrl}, TRUE) AS incoming
-    ON DUPLICATE KEY UPDATE source_name = incoming.source_name, base_url = incoming.base_url
+    VALUES (#{sourceCode}, #{sourceName}, #{baseUrl}, TRUE)
+    <!-- DB 메타데이터에 따른 고정 분기입니다. 기존 수집 중지 상태는 두 DB 모두 유지합니다. -->
+    <choose>
+      <when test="_databaseId == 'postgresql'">
+        ON CONFLICT (source_code) DO UPDATE
+        SET source_name = EXCLUDED.source_name, base_url = EXCLUDED.base_url
+      </when>
+      <otherwise>
+        AS incoming ON DUPLICATE KEY UPDATE source_name = incoming.source_name, base_url = incoming.base_url
+      </otherwise>
+    </choose>
   </insert>
   <select id="findSource" resultMap="sourceMap">
     SELECT * FROM property_source WHERE source_code = #{code}
@@ -59,14 +68,27 @@
     VALUES
       (#{sourceId}, #{sourceListingKey}, #{title}, #{originalUrl}, #{prefecture}, #{city}, #{address},
        #{rentYen}, #{managementFeeYen}, #{layout}, #{areaM2}, #{stationName}, #{walkMinutes}, #{imageUrl},
-       'ACTIVE', #{lastSeenAt}) AS incoming
-    ON DUPLICATE KEY UPDATE
-      title = incoming.title, original_url = incoming.original_url,
-      prefecture = incoming.prefecture, city = incoming.city, address = incoming.address,
-      rent_yen = incoming.rent_yen, management_fee_yen = incoming.management_fee_yen,
-      layout = incoming.layout, area_m2 = incoming.area_m2, station_name = incoming.station_name,
-      walk_minutes = incoming.walk_minutes, image_url = incoming.image_url,
-      status = 'ACTIVE', last_seen_at = incoming.last_seen_at
+       'ACTIVE', #{lastSeenAt})
+    <choose>
+      <when test="_databaseId == 'postgresql'">
+        ON CONFLICT (source_id, source_listing_key) DO UPDATE SET
+          title = EXCLUDED.title, original_url = EXCLUDED.original_url,
+          prefecture = EXCLUDED.prefecture, city = EXCLUDED.city, address = EXCLUDED.address,
+          rent_yen = EXCLUDED.rent_yen, management_fee_yen = EXCLUDED.management_fee_yen,
+          layout = EXCLUDED.layout, area_m2 = EXCLUDED.area_m2, station_name = EXCLUDED.station_name,
+          walk_minutes = EXCLUDED.walk_minutes, image_url = EXCLUDED.image_url,
+          status = 'ACTIVE', last_seen_at = EXCLUDED.last_seen_at
+      </when>
+      <otherwise>
+        AS incoming ON DUPLICATE KEY UPDATE
+          title = incoming.title, original_url = incoming.original_url,
+          prefecture = incoming.prefecture, city = incoming.city, address = incoming.address,
+          rent_yen = incoming.rent_yen, management_fee_yen = incoming.management_fee_yen,
+          layout = incoming.layout, area_m2 = incoming.area_m2, station_name = incoming.station_name,
+          walk_minutes = incoming.walk_minutes, image_url = incoming.image_url,
+          status = 'ACTIVE', last_seen_at = incoming.last_seen_at
+      </otherwise>
+    </choose>
   </insert>
 
   <sql id="joinedListings">
@@ -88,10 +110,18 @@
     <if test="maxRent != null">AND p.rent_yen &lt;= #{maxRent}</if>
     <if test="walkMinutes != null">AND p.walk_minutes &lt;= #{walkMinutes}</if>
     <if test="sourceId != null">AND p.source_id = #{sourceId}</if>
-    <!-- LOCATE는 사용자 입력의 %·_를 와일드카드가 아닌 일반 문자로 검색합니다. -->
+    <!-- LOCATE·STRPOS는 %·_를 일반 문자로 검색합니다. DB마다 함수 인자 순서가 다릅니다. -->
     <if test="queryKeyword != null and queryKeyword != ''">
-      AND (LOCATE(#{queryKeyword}, p.title) &gt; 0 OR LOCATE(#{queryKeyword}, p.address) &gt; 0
-        OR LOCATE(#{queryKeyword}, p.station_name) &gt; 0 OR LOCATE(#{queryKeyword}, s.source_name) &gt; 0)
+      <choose>
+        <when test="_databaseId == 'postgresql'">
+          AND (STRPOS(p.title, #{queryKeyword}) &gt; 0 OR STRPOS(p.address, #{queryKeyword}) &gt; 0
+            OR STRPOS(p.station_name, #{queryKeyword}) &gt; 0 OR STRPOS(s.source_name, #{queryKeyword}) &gt; 0)
+        </when>
+        <otherwise>
+          AND (LOCATE(#{queryKeyword}, p.title) &gt; 0 OR LOCATE(#{queryKeyword}, p.address) &gt; 0
+            OR LOCATE(#{queryKeyword}, p.station_name) &gt; 0 OR LOCATE(#{queryKeyword}, s.source_name) &gt; 0)
+        </otherwise>
+      </choose>
     </if>
     <choose>
       <when test="sort == 'rentAsc'">ORDER BY p.rent_yen IS NULL, p.rent_yen, p.id DESC</when>

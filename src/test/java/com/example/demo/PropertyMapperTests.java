@@ -13,9 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 실제 MySQL에서 MyBatis XML·중복 갱신·검색 조건을 검증합니다. @SpringBootTest는 실제 설정을 로드합니다.
+ * 선택한 실제 DB(MySQL 또는 PostgreSQL)에서 MyBatis XML·중복 갱신·검색 조건을 검증합니다.
+ * @SpringBootTest는 실제 설정을 로드하며 기본 supabase 프로필은 팀 공용 PostgreSQL에 연결합니다.
  * @Transactional 때문에 테스트가 삽입한 고유 출처와 매물은 테스트 종료 시 자동 롤백되며 기존 수집 매물은 건드리지 않습니다.
- * 외부 사이트 수집은 기본 설정에서 비활성화되어 테스트 중 네트워크 요청을 하지 않습니다.
+ * 외부 사이트 수집은 기본 설정에서 비활성화되지만 Supabase DB 연결에는 네트워크가 필요합니다.
  */
 @SpringBootTest
 @Transactional
@@ -65,7 +66,7 @@ class PropertyMapperTests {
         assertEquals(2, mapper.findListings(search).size());
     }
 
-    /** 실제 MySQL에서 도쿄와 홋카이도 조건이 서로의 매물을 섞지 않는지 확인합니다. */
+    /** 선택한 실제 DB에서 도쿄와 홋카이도 조건이 서로의 매물을 섞지 않는지 확인합니다. */
     @Test
     void prefectureFilterSeparatesHokkaidoFromTokyo() {
         PropertySource source = source();

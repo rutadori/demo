@@ -1,0 +1,5 @@
+# 이 파일을 supabase-local.properties로 복사한 뒤 별도로 전달받은 전용 계정 암호를 입력하세요.
+# 기존 Supabase 관리자(postgres) 비밀번호는 애플리케이션에 사용하지 않습니다.
+SUPABASE_DB_URL=jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
+SUPABASE_DB_USERNAME=house_app_runtime.ujwzjjoqyfazdgmfdcoj
+SUPABASE_DB_PASSWORD=YOUR_RUNTIME_DB_PASSWORD

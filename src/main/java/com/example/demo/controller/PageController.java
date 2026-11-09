@@ -123,10 +123,4 @@ public class PageController {
     }
 
 
-    @GetMapping("/test/tests")
-    public String tests() {
-        return "test/test";
-    }
-
-
 }

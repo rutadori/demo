@@ -73,7 +73,7 @@ public class PageController {
      */
     @GetMapping("/member/join")
     public String join() {
-        return "member/login";
+        return "member/join";
     }
 
     /**

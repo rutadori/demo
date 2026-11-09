@@ -121,4 +121,12 @@ public class PageController {
     public String recommend() {
         return "recommend/search";
     }
+
+
+    @GetMapping("/test/tests")
+    public String tests() {
+        return "test/test";
+    }
+
+
 }
